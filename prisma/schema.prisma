@@ -1,0 +1,236 @@
+// CUBI Mobiliario de Diseño SL — Tesorería, Pagos y Cobros
+// Ver README.md para las decisiones de modelado tomadas al leer el Excel original.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// PAGOS
+// ---------------------------------------------------------------------------
+
+enum SituacionPago {
+  GIRO // código '01' en el Excel
+  TRANSFERENCIA // código '05' en el Excel
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+}
+
+enum Partida {
+  BANCOS // cuotas de préstamos/leasing
+  TARJETAS
+  SEGUROS
+  PERSONAL // nóminas + seguridad social
+  IMPUESTOS // Mod 111, etc.
+  VARIOS_PREVISION
+  SUMINISTROS_OTROS // Endesa, alquiler, seguro nave...
+  PROVEEDORES // facturas normales de proveedores (Fra. Nº, PROVEEDOR)
+  OTROS
+}
+
+model Pago {
+  id String @id @default(cuid())
+
+  situacion SituacionPago
+  estado    EstadoPago    @default(PENDIENTE)
+
+  fechaFactura DateTime?
+  fechaPago    DateTime
+
+  observacion String
+  proveedor   String? // extraído de "Fra. Nº, PROVEEDOR" cuando aplica
+  partida     Partida @default(OTROS)
+
+  importe Decimal @db.Decimal(12, 2)
+
+  // Solo aplica a situacion = TRANSFERENCIA. Fecha (lunes) de la semana de
+  // remesa a la que se ha asignado este pago; null = sin asignar todavía.
+  remesaSemana DateTime?
+
+  // Origen del registro, para depurar duplicados de importación.
+  origenImportacion String? // p.ej. "PAGOS!B12" o "PAGOS!X87"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fechaPago])
+  @@index([situacion, remesaSemana])
+  @@index([proveedor])
+  @@index([partida])
+}
+
+// ---------------------------------------------------------------------------
+// COBROS
+// ---------------------------------------------------------------------------
+
+enum TipoCobro {
+  NORMAL
+  INCIDENCIA_DEVOLUCION
+}
+
+model Cobro {
+  id String @id @default(cuid())
+
+  tipo TipoCobro @default(NORMAL)
+
+  fechaFactura     DateTime?
+  fechaVencimiento DateTime?
+
+  factura     String // cliente / nº de factura (columna "FACTURA" del Excel)
+  observacion String?
+
+  importeTalon         Decimal? @db.Decimal(12, 2)
+  importeTransferencia Decimal? @db.Decimal(12, 2)
+  importeIncidencia    Decimal? @db.Decimal(12, 2)
+  importeDevolucion    Decimal? @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fechaVencimiento])
+  @@index([tipo])
+}
+
+// ---------------------------------------------------------------------------
+// COBROS ESPECIALES (hoja "+")
+// ---------------------------------------------------------------------------
+
+enum CategoriaCobroEspecial {
+  INSIGNIFICANTE_INACTIVO // trf pendientes insignificantes, clientes inactivos
+  DUDOSO_COBRO
+  ACTIVO_PENDIENTE // trf pendientes de clientes activos
+  FALTA_ABONO // falta por hacer abono
+  ABONO_PENDIENTE // abonos que faltan por pagar
+  PENDIENTE_REVISAR
+}
+
+model CobroEspecial {
+  id String @id @default(cuid())
+
+  categoria      CategoriaCobroEspecial
+  clienteFactura String
+  importe        Decimal                @db.Decimal(12, 2)
+  observaciones  String?
+
+  fechaFactura     DateTime?
+  fechaVencimiento DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoria])
+}
+
+// ---------------------------------------------------------------------------
+// BANCOS
+// ---------------------------------------------------------------------------
+
+enum TipoProducto {
+  PRESTAMO
+  POLIZA_CREDITO
+  LEASING
+  LINEA_DESCUENTO
+  CUENTA
+}
+
+model EntidadFinanciera {
+  id     String                @id @default(cuid())
+  nombre String                @unique
+  productos ProductoFinanciero[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductoFinanciero {
+  id         String            @id @default(cuid())
+  entidadId  String
+  entidad    EntidadFinanciera @relation(fields: [entidadId], references: [id], onDelete: Cascade)
+
+  tipo   TipoProducto
+  nombre String // p.ej. "Préstamo COVID ICO"
+
+  capitalInicial   Decimal? @db.Decimal(12, 2)
+  // Si es null y hay parámetros de amortización, el pendiente se calcula.
+  // Si tiene valor, actúa como override manual (p.ej. producto sin cuadro).
+  pendienteManual  Decimal? @db.Decimal(12, 2)
+  dispuesto        Decimal? @db.Decimal(12, 2)
+  disponible       Decimal? @db.Decimal(12, 2)
+
+  tipoInteresTexto String? // "2% FIJO", "EUR+1% VARIABLE"...
+  tipoInteresAnual Decimal? @db.Decimal(6, 4) // parte numérica, si se pudo interpretar
+
+  cuotaMensual Decimal? @db.Decimal(12, 2)
+
+  fechaConstitucion      DateTime?
+  fechaPrimerVencimiento DateTime?
+  fechaVencimiento       DateTime?
+  numCuotas              Int?
+
+  // Cuadro de amortización no estándar (carencia de capital, tipo variable
+  // por tramos, etc.). Si está presente, se usa tal cual en vez de calcular
+  // la amortización francesa. Formato: [{ numero, fecha, capital }].
+  cuadroPersonalizado Json?
+
+  observaciones String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entidadId])
+}
+
+// ---------------------------------------------------------------------------
+// PROYECCIÓN DE TESORERÍA
+// ---------------------------------------------------------------------------
+
+// Fila única (singleton): los supuestos editables de la proyección a N meses.
+model SupuestoTesoreria {
+  id String @id @default(cuid())
+
+  facturacionMensual   Decimal @db.Decimal(12, 2)
+  desfaseCobroMeses    Int
+  pagosProveedoresMes  Decimal @db.Decimal(12, 2)
+  gastosFijosMes       Decimal @db.Decimal(12, 2)
+
+  saldoInicialCuentas         Decimal @db.Decimal(12, 2)
+  saldoInicialCuentasPolizas  Decimal @db.Decimal(12, 2)
+
+  lineaFinanciacionCaixabank Decimal @db.Decimal(12, 2)
+
+  letrasEnCartera            Decimal @db.Decimal(12, 2)
+  pctLetrasCobradasPrimerMes Decimal @db.Decimal(5, 4)
+  albaranesGirosACobrar      Decimal @db.Decimal(12, 2)
+
+  seguroNavePrimaAnual  Decimal @db.Decimal(12, 2)
+  pagoMod111Trimestre   Decimal @db.Decimal(12, 2)
+  previsionMensual      Decimal @db.Decimal(12, 2)
+
+  fechaInicioProyeccion DateTime
+  mesesProyeccion       Int     @default(23)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// CONTROL DE IMPORTACIÓN
+// ---------------------------------------------------------------------------
+
+// Registra cada ejecución del script de importación inicial para que sea
+// idempotente (o al menos para poder avisar de una segunda ejecución).
+model ImportacionLog {
+  id            String   @id @default(cuid())
+  archivo       String
+  hashContenido String   @unique
+  filasPagos    Int
+  filasCobros   Int
+  ejecutadoEn   DateTime @default(now())
+}
