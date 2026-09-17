@@ -3,12 +3,36 @@ import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import {
   parsePagosSheetCompleto,
+  parsePagosGenerico,
   parsePagosCsv,
   parseCobrosSheetCompleto,
   parseCobrosCsv,
   type PagoImportado,
   type CobroImportado,
 } from "@/lib/excel-import";
+
+// El Excel histórico original tiene un formato muy específico (tabla B:G +
+// tabla histórica X:AB en posiciones fijas). Cualquier otro Excel de pagos
+// —de otra herramienta, u otro export— no encaja ahí y no lanza error (la
+// hoja se puede seguir llamando "PAGOS"), simplemente no encuentra filas.
+// Por eso probamos primero el formato estricto y, si no saca ninguna fila,
+// caemos al parser genérico basado en cabeceras.
+function parsePagosExcel(wb: XLSX.WorkBook, warnings: string[]): PagoImportado[] {
+  const warningsEstricto: string[] = [];
+  let pagos: PagoImportado[] = [];
+  try {
+    pagos = parsePagosSheetCompleto(wb, warningsEstricto);
+  } catch {
+    pagos = [];
+  }
+
+  if (pagos.length > 0) {
+    warnings.push(...warningsEstricto);
+    return pagos;
+  }
+
+  return parsePagosGenerico(wb, warnings);
+}
 
 export const runtime = "nodejs";
 
@@ -55,7 +79,7 @@ export async function POST(req: NextRequest) {
       let pagos: PagoImportado[];
       if (esExcel) {
         const wb = XLSX.read(buffer, { type: "buffer", cellDates: true });
-        pagos = parsePagosSheetCompleto(wb, warnings);
+        pagos = parsePagosExcel(wb, warnings);
       } else {
         const r = parsePagosCsv(buffer.toString("utf-8"));
         pagos = r.pagos;

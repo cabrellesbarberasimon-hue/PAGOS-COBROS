@@ -141,6 +141,120 @@ export function parsePagosSheetCompleto(wb: XLSX.WorkBook, warnings: string[]): 
   return resultado;
 }
 
+function normalizarCabecera(v: unknown): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quita acentos
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Parsea una hoja de pagos con formato "plano": una fila de cabecera con los
+ * nombres de columna (en cualquier orden) y una fila por pago debajo, sin
+ * las posiciones fijas del Excel histórico original. Pensado para
+ * exportaciones de otras herramientas (CRM, banca online, etc.) que usan
+ * las mismas columnas conceptuales — situación, fecha, observación, total,
+ * fecha de factura — pero en otro orden o con otra cabecera.
+ */
+export function parsePagosGenerico(wb: XLSX.WorkBook, warnings: string[]): PagoImportado[] {
+  const nombreHoja = wb.SheetNames.find((n) => n.toUpperCase().includes("PAGO")) ?? wb.SheetNames[0];
+  const sheet = wb.Sheets[nombreHoja];
+  if (!sheet) throw new Error("El Excel no tiene ninguna hoja con datos.");
+
+  const maxRow = lastRow(sheet);
+  const maxCol = 20;
+
+  let headerRow = -1;
+  let colSituacion = -1;
+  let colFechaPago = -1;
+  let colObservacion = -1;
+  let colImporte = -1;
+  let colFechaFactura = -1;
+
+  for (let r = 1; r <= Math.min(5, maxRow); r++) {
+    let encontrados = 0;
+    const cols = { situacion: -1, fechaPago: -1, observacion: -1, importe: -1, fechaFactura: -1 };
+    for (let c = 1; c <= maxCol; c++) {
+      const h = normalizarCabecera(cell(sheet, r, c));
+      if (!h) continue;
+      if (h.includes("situacion")) {
+        cols.situacion = c;
+        encontrados++;
+      } else if (h.includes("factura")) {
+        cols.fechaFactura = c;
+        encontrados++;
+      } else if (h === "fecha" || h.includes("fecha pago") || h.includes("fecha de pago")) {
+        cols.fechaPago = c;
+        encontrados++;
+      } else if (h.includes("observacion")) {
+        cols.observacion = c;
+        encontrados++;
+      } else if (h.includes("total") || h.includes("importe")) {
+        cols.importe = c;
+        encontrados++;
+      }
+    }
+    // Consideramos que es la fila de cabecera si reconocemos al menos
+    // observación, fecha de pago e importe.
+    if (cols.observacion !== -1 && cols.fechaPago !== -1 && cols.importe !== -1) {
+      headerRow = r;
+      colSituacion = cols.situacion;
+      colFechaPago = cols.fechaPago;
+      colObservacion = cols.observacion;
+      colImporte = cols.importe;
+      colFechaFactura = cols.fechaFactura;
+      break;
+    }
+  }
+
+  if (headerRow === -1) {
+    throw new Error(
+      'No se reconoce el formato de esta hoja de pagos. Debe tener una fila de cabecera con columnas de ' +
+        '"Observación", "Fecha" (de pago) e "Importe"/"Total" (y opcionalmente "Situación" y "Fecha de factura").'
+    );
+  }
+
+  const resultado: PagoImportado[] = [];
+  const HOY = hoy();
+
+  for (let r = headerRow + 1; r <= maxRow; r++) {
+    const observacion = cellText(sheet, r, colObservacion);
+    if (!observacion) continue;
+
+    const fechaPago = cellDate(sheet, r, colFechaPago);
+    const importe = cellNumber(sheet, r, colImporte);
+
+    if (!fechaPago || importe === null) {
+      warnings.push(`Fila ${r} ("${observacion}"): sin fecha de pago o sin importe, se omite.`);
+      continue;
+    }
+
+    let situacion: SituacionPago = "TRANSFERENCIA";
+    if (colSituacion !== -1) {
+      const raw = cellText(sheet, r, colSituacion)?.replace(/^0+/, "") || "";
+      if (raw === "1") situacion = "GIRO";
+      else if (raw === "5") situacion = "TRANSFERENCIA";
+      else if (raw) {
+        warnings.push(`Fila ${r} ("${observacion}"): código de situación "${raw}" no reconocido, se asume Transferencia.`);
+      }
+    }
+
+    resultado.push({
+      situacion,
+      estado: fechaPago <= HOY ? "PAGADO" : "PENDIENTE",
+      fechaFactura: colFechaFactura !== -1 ? cellDate(sheet, r, colFechaFactura) : null,
+      fechaPago,
+      observacion,
+      proveedor: extractProveedor(observacion),
+      partida: classifyPartida(observacion),
+      importe,
+    });
+  }
+
+  return resultado;
+}
+
 /** Parsea un CSV sencillo de pagos: cabecera fecha_pago,situacion,observacion,importe[,fecha_factura] */
 export function parsePagosCsv(texto: string): { pagos: PagoImportado[]; warnings: string[] } {
   const warnings: string[] = [];
