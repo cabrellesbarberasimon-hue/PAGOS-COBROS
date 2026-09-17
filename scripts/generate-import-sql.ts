@@ -54,7 +54,10 @@ function main() {
 
   const out: string[] = [];
   out.push("-- Carga inicial generada desde el Excel histórico. Ejecutar una sola vez.");
-  out.push("BEGIN;");
+  out.push("-- Todo va dentro de un único bloque DO porque algunos editores SQL");
+  out.push("-- (p.ej. el de Neon) solo admiten una sentencia por ejecución.");
+  out.push("DO $CARGA_INICIAL$");
+  out.push("BEGIN");
   out.push("");
 
   if (pagos.length) {
@@ -198,7 +201,7 @@ function main() {
     )}) ON CONFLICT ("hashContenido") DO NOTHING;`
   );
   out.push("");
-  out.push("COMMIT;");
+  out.push("END $CARGA_INICIAL$;");
 
   console.log(out.join("\n"));
   console.error(`\n-- Generado: ${pagos.length} pagos, ${cobros.length} cobros, ${cobrosEspeciales.length} cobros especiales, ${productos.length} productos.`);
