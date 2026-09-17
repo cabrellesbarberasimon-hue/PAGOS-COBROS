@@ -44,3 +44,20 @@ export async function updateSupuesto(formData: FormData) {
   revalidatePath("/");
   redirect("/proyeccion");
 }
+
+export async function updateInformeInputs(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("No hay supuestos de proyección configurados todavía.");
+
+  await prisma.supuestoTesoreria.update({
+    where: { id },
+    data: {
+      pedidosPendientesServir: num(formData.get("pedidosPendientesServir")),
+      inversionesPendientes: num(formData.get("inversionesPendientes")),
+      colchonSeguridadMeses: num(formData.get("colchonSeguridadMeses")),
+    },
+  });
+
+  revalidatePath("/informe");
+  redirect("/informe");
+}

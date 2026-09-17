@@ -9,6 +9,7 @@ const NAV = [
   { href: "/bancos", label: "Bancos", icon: "🏦" },
   { href: "/amortizaciones", label: "Amortizaciones", icon: "📉" },
   { href: "/proyeccion", label: "Proyección", icon: "📈" },
+  { href: "/informe", label: "Informe de posición", icon: "🧾" },
   { href: "/importar", label: "Importar Excel", icon: "📥" },
 ];
 

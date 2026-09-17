@@ -217,6 +217,13 @@ model SupuestoTesoreria {
   fechaInicioProyeccion DateTime
   mesesProyeccion       Int     @default(23)
 
+  // Insumos manuales del Informe de posición (antes "2ª capa" de la hoja
+  // Situación Bancaria del Excel): no se pueden derivar de Pagos/Cobros
+  // porque son a nivel de pedido/proyecto, no de factura.
+  pedidosPendientesServir Decimal @default(0) @db.Decimal(12, 2)
+  inversionesPendientes   Decimal @default(0) @db.Decimal(12, 2)
+  colchonSeguridadMeses   Decimal @default(3) @db.Decimal(4, 1)
+
   updatedAt DateTime @updatedAt
 }
 

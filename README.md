@@ -18,8 +18,9 @@ usuarios).
 - `lib/excel-import.ts` — parseo de Excel/CSV reutilizado por el script de
   carga inicial y por la pantalla web "Importar Excel".
 - `scripts/import-excel.ts` — script de carga inicial (una sola vez).
-- `app/(app)/*` — las 9 pantallas de la app (dashboard, pagos, cobros,
-  cobros especiales, resumen, bancos, amortizaciones, proyección, importar).
+- `app/(app)/*` — las 10 pantallas de la app (dashboard, pagos, cobros,
+  cobros especiales, resumen, bancos, amortizaciones, proyección, informe de
+  posición, importar).
 - `app/login`, `middleware.ts`, `lib/auth.ts` — autenticación por contraseña.
 
 ## Decisiones de modelado (Excel → app)
@@ -58,13 +59,20 @@ modelo. Diferencias respecto a un primer boceto, y por qué:
   cuando los hay, y solo recurre a los supuestos (`SupuestoTesoreria`) para
   los meses sin datos todavía. Por eso la proyección mejora sola según se
   van registrando pagos reales, sin tocar ningún supuesto a mano.
-- **Fuera de alcance (por ahora, a decidir más adelante)**: la "2ª capa" de
-  análisis de la hoja "Situación Bancaria" del Excel (embudo de conversión
-  a caja, calidad de liquidez, calendario cobros vs. pagos, panel de
-  alertas automáticas, un escenario de proyección a 12 meses paralelo a la
-  hoja de Proyección) no se ha replicado — varias de sus fórmulas ya
-  estaban rotas (`#REF!`) en el Excel original, y quedó pendiente de decidir
-  su alcance.
+- **La "2ª capa" de análisis de la hoja "Situación Bancaria"** (embudo de
+  conversión a caja, calidad de liquidez, riesgo 30/60/90 días, capacidad
+  financiera, KPIs de gestión, panel de alertas automáticas, y un escenario
+  de proyección a 12 meses) se implementó como un **informe puntual**
+  (pantalla **Informe de posición**, `/informe`) en vez de como pantalla
+  editable, porque casi todo ese contenido es un cálculo de "hoy", no datos
+  que se editen a mano. Se calcula en vivo con `lib/informe.ts` a partir de
+  Pagos/Cobros/Bancos/Proyección, con 3 insumos manuales que no se pueden
+  derivar de facturas (pedidos pendientes de servir, inversiones pendientes,
+  colchón de seguridad en meses de cuota — editables en la propia pantalla).
+  El escenario a 12 meses **no se reimplementó aparte** (el del Excel tenía
+  fórmulas rotas `#REF!`): reutiliza directamente los primeros 12 meses del
+  motor de Proyección ya existente. Se puede exportar a Excel y a PDF desde
+  la propia pantalla.
 
 ## Desarrollo local
 
