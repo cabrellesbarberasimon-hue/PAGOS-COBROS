@@ -99,6 +99,17 @@ npm run import:excel -- /ruta/al/PAGOS-COBROS_PROYECCIONES_18-09.xlsx
 - Usa `--dry-run` para ver el resumen de lo que importaría sin escribir
   nada en la base de datos.
 
+Si no tienes conexión directa (TCP, puerto 5432) a la base de datos —p.ej.
+solo puedes salir por HTTPS— usa en su lugar:
+
+```bash
+npx tsx scripts/generate-import-sql.ts /ruta/al/excel.xlsx > carga-inicial.sql
+```
+
+Genera el mismo resultado como SQL plano (sin depender de Prisma Client ni
+de una conexión a base de datos), listo para pegar en el editor SQL de
+Neon/Vercel.
+
 A partir de esa carga inicial, la app es la fuente de verdad. Los pagos y
 cobros nuevos se dan de alta desde la propia aplicación: a mano, o subiendo
 un Excel (mismo formato de hoja PAGOS/COBROS) o un CSV sencillo desde la

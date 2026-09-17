@@ -59,7 +59,7 @@ function parseCobros(wb: XLSX.WorkBook): CobroImportado[] {
 // COBROS ESPECIALES (hoja "+")
 // ---------------------------------------------------------------------------
 
-interface CobroEspecialImportado {
+export interface CobroEspecialImportado {
   categoria: CategoriaCobroEspecial;
   clienteFactura: string;
   importe: number;
@@ -75,7 +75,7 @@ const SECCIONES_COBRO_ESPECIAL: Array<{ marker: string; categoria: CategoriaCobr
   { marker: "PENDIENTE REVISAR", categoria: "PENDIENTE_REVISAR" },
 ];
 
-function parseCobrosEspeciales(wb: XLSX.WorkBook, warnings: string[]): CobroEspecialImportado[] {
+export function parseCobrosEspeciales(wb: XLSX.WorkBook, warnings: string[]): CobroEspecialImportado[] {
   const sheet = wb.Sheets["+"];
   if (!sheet) throw new Error('No se encontró la hoja "+"');
 
@@ -123,7 +123,7 @@ function parseCobrosEspeciales(wb: XLSX.WorkBook, warnings: string[]): CobroEspe
 // BANCOS: EntidadFinanciera + ProductoFinanciero
 // ---------------------------------------------------------------------------
 
-interface ProductoImportado {
+export interface ProductoImportado {
   entidad: string;
   tipo: TipoProducto;
   nombre: string;
@@ -168,7 +168,7 @@ const AMORTIZACION_PARAMS: Record<string, { tipoInteresAnual: number; fechaPrime
   "BANKINTER::PRESTAMO  COVID  ICO": { tipoInteresAnual: 0.0225, fechaPrimerVencimientoFutura: "" },
 };
 
-function parseBancos(wb: XLSX.WorkBook, warnings: string[]): ProductoImportado[] {
+export function parseBancos(wb: XLSX.WorkBook, warnings: string[]): ProductoImportado[] {
   const pool = wb.Sheets["Pool Bancario"];
   const situacion = wb.Sheets["Situación Bancaria"];
   if (!pool) throw new Error("No se encontró la hoja Pool Bancario");
@@ -318,7 +318,7 @@ function parseBancos(wb: XLSX.WorkBook, warnings: string[]): ProductoImportado[]
 // SUPUESTOS DE PROYECCIÓN DE TESORERÍA
 // ---------------------------------------------------------------------------
 
-function parseSupuestoTesoreria(wb: XLSX.WorkBook): Prisma.SupuestoTesoreriaCreateInput {
+export function parseSupuestoTesoreria(wb: XLSX.WorkBook): Prisma.SupuestoTesoreriaCreateInput {
   const sheet = wb.Sheets["Proyeccion Tesoreria"];
   if (!sheet) throw new Error("No se encontró la hoja Proyeccion Tesoreria");
 
@@ -459,9 +459,15 @@ async function main() {
   console.log("\n✔ Importación completada.");
 }
 
-main()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// Solo ejecuta el import al invocar este fichero directamente (no cuando se
+// importan sus funciones de parseo desde otro script, como
+// generate-import-sql.ts).
+const esEntrypoint = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+if (esEntrypoint) {
+  main()
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}
