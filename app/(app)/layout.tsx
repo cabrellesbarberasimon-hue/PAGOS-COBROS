@@ -1,10 +1,11 @@
 import { NavLink } from "@/components/NavLink";
+import { getSessionRole } from "@/lib/auth";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: "📊" },
   { href: "/pagos", label: "Pagos", icon: "💸" },
   { href: "/cobros", label: "Cobros", icon: "💰" },
-  { href: "/cobros-especiales", label: "Cobros especiales", icon: "⚠️" },
+  { href: "/cobros-especiales", label: "Cobros especiales", icon: "⚠️", soloSimon: true },
   { href: "/resumen", label: "Resumen", icon: "📋" },
   { href: "/bancos", label: "Bancos", icon: "🏦" },
   { href: "/amortizaciones", label: "Amortizaciones", icon: "📉" },
@@ -13,7 +14,10 @@ const NAV = [
   { href: "/importar", label: "Importar Excel", icon: "📥" },
 ];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const role = await getSessionRole();
+  const nav = NAV.filter((item) => !item.soloSimon || role === "simon");
+
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white px-3 py-5 md:block">
@@ -28,7 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="space-y-1">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
         </nav>
@@ -56,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-2 py-2 md:hidden">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
         </nav>

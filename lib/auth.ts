@@ -1,7 +1,10 @@
 import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
 
 const COOKIE_NAME = "cubi_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30; // 30 días
+
+export type SessionRole = "simon" | "user";
 
 function getSecret() {
   const secret = process.env.APP_PASSWORD;
@@ -14,20 +17,26 @@ function getSecret() {
   return new TextEncoder().encode(`cubi-session-key:${secret}`);
 }
 
-export async function createSessionToken(): Promise<string> {
-  return new SignJWT({ ok: true })
+export async function createSessionToken(role: SessionRole): Promise<string> {
+  return new SignJWT({ ok: true, role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
     .sign(getSecret());
 }
 
-export async function verifySessionToken(token: string): Promise<boolean> {
+export interface SessionInfo {
+  valid: boolean;
+  role: SessionRole;
+}
+
+export async function verifySessionToken(token: string): Promise<SessionInfo> {
   try {
-    await jwtVerify(token, getSecret());
-    return true;
+    const { payload } = await jwtVerify(token, getSecret());
+    const role: SessionRole = payload.role === "simon" ? "simon" : "user";
+    return { valid: true, role };
   } catch {
-    return false;
+    return { valid: false, role: "user" };
   }
 }
 
@@ -38,3 +47,13 @@ export function checkPassword(candidate: string): boolean {
 
 export const SESSION_COOKIE_NAME = COOKIE_NAME;
 export const SESSION_MAX_AGE = SESSION_DURATION_SECONDS;
+
+// Para usar en Server Components (p.ej. para ocultar del menú lo que no
+// corresponda a la sesión actual). El middleware ya bloquea el acceso real
+// por URL; esto es solo para no mostrar el enlace.
+export async function getSessionRole(): Promise<SessionRole | null> {
+  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+  const session = await verifySessionToken(token);
+  return session.valid ? session.role : null;
+}

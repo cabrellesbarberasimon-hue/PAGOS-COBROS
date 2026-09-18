@@ -32,6 +32,11 @@ export default function LoginPage({
             />
           </div>
 
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="esSimon" value="1" className="h-4 w-4 rounded border-slate-300" />
+            Soy Simón (acceso completo, incluye Cobros especiales)
+          </label>
+
           {searchParams.error ? (
             <p className="text-sm text-semaforo-rojo">Contraseña incorrecta.</p>
           ) : null}

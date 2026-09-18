@@ -188,3 +188,10 @@ detección de duplicados antes de confirmar.
   al parsear ficheros maliciosamente manipulados). Al ser una app de un
   único usuario protegida por contraseña, el riesgo es bajo, pero solo debe
   usarse para subir ficheros de confianza, no ficheros de terceros.
+- **Acceso a Cobros especiales**: sigue habiendo una única contraseña
+  (`APP_PASSWORD`), pero en el login hay una casilla "Soy Simón" que marca
+  la sesión con un rol (`simon` / `user`) dentro de la propia cookie
+  firmada. La pantalla y las rutas de `/cobros-especiales` están bloqueadas
+  en `middleware.ts` para cualquier sesión que no sea `simon` (no solo
+  ocultas del menú), así que no se puede acceder aunque se escriba la URL
+  a mano.

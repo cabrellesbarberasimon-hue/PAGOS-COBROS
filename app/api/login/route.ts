@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(url, { status: 303 });
   }
 
-  const token = await createSessionToken();
+  const esSimon = body?.get("esSimon") === "1";
+  const token = await createSessionToken(esSimon ? "simon" : "user");
   const redirectTo = body?.get("from");
   const target = typeof redirectTo === "string" && redirectTo.startsWith("/") ? redirectTo : "/";
 
