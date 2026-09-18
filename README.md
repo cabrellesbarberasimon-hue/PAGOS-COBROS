@@ -110,6 +110,30 @@ Genera el mismo resultado como SQL plano (sin depender de Prisma Client ni
 de una conexión a base de datos), listo para pegar en el editor SQL de
 Neon/Vercel.
 
+### Sincronizar con un Excel actualizado (sin duplicar lo ya cargado)
+
+Si más adelante quieres volver a cargar una versión actualizada del Excel
+completo (por ejemplo, para refrescar los saldos bancarios o añadir pagos
+nuevos que llevas en el propio Excel en vez de dar de alta uno a uno), usa:
+
+```bash
+npx tsx scripts/generate-sync-sql.ts /ruta/al/excel-actualizado.xlsx > sync.sql
+```
+
+A diferencia de `generate-import-sql.ts` (pensado para una base de datos
+vacía), este script es seguro para ejecutarlo sobre una base de datos que
+**ya tiene datos**:
+
+- Pagos, Cobros y Cobros especiales: solo se insertan los que no existan ya
+  (mismo pago/factura y fecha) — nunca duplica.
+- Bancos (entidades y productos financieros) y el supuesto de proyección:
+  se **actualizan** con los valores del Excel (saldos, cuotas, vencimientos…).
+  Los 3 insumos manuales del Informe de posición no se tocan, porque no
+  vienen del Excel.
+
+Al igual que el de carga inicial, genera SQL plano para pegar en el editor
+de Neon/Vercel si no hay conexión TCP directa a la base de datos.
+
 A partir de esa carga inicial, la app es la fuente de verdad. Los pagos y
 cobros nuevos se dan de alta desde la propia aplicación: a mano, o subiendo
 un Excel (mismo formato de hoja PAGOS/COBROS) o un CSV sencillo desde la

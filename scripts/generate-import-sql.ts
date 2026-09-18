@@ -18,21 +18,7 @@ import { resolve } from "node:path";
 import * as XLSX from "xlsx";
 import { parsePagosSheetCompleto, parseCobrosSheetCompleto } from "../lib/excel-import";
 import { parseCobrosEspeciales, parseBancos, parseSupuestoTesoreria } from "./import-excel";
-
-function sqlStr(v: string | null | undefined): string {
-  if (v === null || v === undefined) return "NULL";
-  return `'${v.replace(/'/g, "''")}'`;
-}
-
-function sqlNum(v: number | null | undefined): string {
-  if (v === null || v === undefined || Number.isNaN(v)) return "NULL";
-  return String(v);
-}
-
-function sqlDate(v: Date | null | undefined): string {
-  if (!v) return "NULL";
-  return `'${v.toISOString()}'`;
-}
+import { sqlStr, sqlNum, sqlDate } from "./sql-helpers";
 
 function main() {
   const filePath = process.argv[2];
