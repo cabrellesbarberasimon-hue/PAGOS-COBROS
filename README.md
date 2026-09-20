@@ -117,7 +117,7 @@ completo (por ejemplo, para refrescar los saldos bancarios o añadir pagos
 nuevos que llevas en el propio Excel en vez de dar de alta uno a uno), usa:
 
 ```bash
-npx tsx scripts/generate-sync-sql.ts /ruta/al/excel-actualizado.xlsx > sync.sql
+npx tsx scripts/generate-sync-sql.ts /ruta/al/excel-actualizado.xlsx [directorio-salida]
 ```
 
 A diferencia de `generate-import-sql.ts` (pensado para una base de datos
@@ -132,7 +132,11 @@ vacía), este script es seguro para ejecutarlo sobre una base de datos que
   vienen del Excel.
 
 Al igual que el de carga inicial, genera SQL plano para pegar en el editor
-de Neon/Vercel si no hay conexión TCP directa a la base de datos.
+de Neon/Vercel si no hay conexión TCP directa a la base de datos. Como ese
+editor solo admite ~100.000 caracteres por ejecución, el script escribe
+varios ficheros `<excel>-sync-parteN-de-M.sql` (cada uno ya es una sola
+sentencia por debajo del límite) — pégalos y ejecútalos **en orden**, uno
+detrás de otro.
 
 A partir de esa carga inicial, la app es la fuente de verdad. Los pagos y
 cobros nuevos se dan de alta desde la propia aplicación: a mano, o subiendo

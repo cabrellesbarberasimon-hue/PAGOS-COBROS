@@ -15,25 +15,58 @@
  *                         vienen del Excel), o se crea si no había ninguna.
  *
  * Uso:
- *   npx tsx scripts/generate-sync-sql.ts /ruta/al/excel-actualizado.xlsx > sync.sql
+ *   npx tsx scripts/generate-sync-sql.ts /ruta/al/excel-actualizado.xlsx [directorio-salida]
+ *
+ * El editor SQL de Neon solo admite ~100.000 caracteres por ejecución, así
+ * que en vez de un único fichero, esto escribe varios ficheros
+ * "sync-parteN-de-M.sql" (cada uno por debajo del límite, y cada uno ya
+ * envuelto en su propio bloque DO — una sola sentencia) para pegarlos y
+ * ejecutarlos uno detrás de otro, en orden.
  *
  * Igual que generate-import-sql.ts, no necesita conexión a base de datos:
  * el SQL resultante se pega en el editor SQL de Neon/Vercel.
  */
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve, join, basename } from "node:path";
 import * as XLSX from "xlsx";
 import { parsePagosSheetCompleto, parseCobrosSheetCompleto } from "../lib/excel-import";
 import { parseCobrosEspeciales, parseBancos, parseSupuestoTesoreria } from "./import-excel";
 import { sqlStr, sqlNum, sqlDate, sqlEqNullSafe } from "./sql-helpers";
 
+// Margen de sobra bajo el límite real de Neon (~100.000 caracteres), para
+// dejar sitio a la envoltura DO $SYNC_N$ ... END $SYNC_N$; de cada parte.
+const LIMITE_CARACTERES_POR_PARTE = 90000;
+
+function dividirEnPartes(lineas: string[], limite: number): string[][] {
+  const partes: string[][] = [];
+  let actual: string[] = [];
+  let longitudActual = 0;
+
+  for (const linea of lineas) {
+    // Una sola línea nunca debería superar el límite ella sola en la práctica,
+    // pero por si acaso no la partimos a mitad (una fila de INSERT rota no
+    // seria SQL válido).
+    if (longitudActual + linea.length + 1 > limite && actual.length > 0) {
+      partes.push(actual);
+      actual = [];
+      longitudActual = 0;
+    }
+    actual.push(linea);
+    longitudActual += linea.length + 1;
+  }
+  if (actual.length > 0) partes.push(actual);
+
+  return partes;
+}
+
 function main() {
   const filePath = process.argv[2];
   if (!filePath) {
-    console.error("Uso: npx tsx scripts/generate-sync-sql.ts /ruta/al/excel.xlsx > sync.sql");
+    console.error("Uso: npx tsx scripts/generate-sync-sql.ts /ruta/al/excel.xlsx [directorio-salida]");
     process.exit(1);
   }
+  const outDir = process.argv[3] ? resolve(process.argv[3]) : process.cwd();
 
   const buffer = readFileSync(resolve(filePath));
   const wb = XLSX.read(buffer, { type: "buffer", cellDates: true });
@@ -46,11 +79,6 @@ function main() {
   const supuesto = parseSupuestoTesoreria(wb);
 
   const out: string[] = [];
-  out.push("-- Sincronización generada desde un Excel actualizado. No duplica pagos/cobros/");
-  out.push("-- cobros especiales ya existentes; actualiza bancos y supuestos de proyección.");
-  out.push("DO $SYNC$");
-  out.push("BEGIN");
-  out.push("");
 
   if (pagos.length) {
     out.push("-- Pagos (se insertan solo si no existen ya: misma observación + fecha de pago)");
@@ -191,11 +219,28 @@ function main() {
         `WHERE NOT EXISTS (SELECT 1 FROM "SupuestoTesoreria");`
     );
   }
-  out.push("");
+  const partes = dividirEnPartes(out, LIMITE_CARACTERES_POR_PARTE);
+  const nombreBase = basename(filePath).replace(/\.[^.]+$/, "");
 
-  out.push("END $SYNC$;");
+  partes.forEach((lineasParte, i) => {
+    const numero = i + 1;
+    const contenido = [
+      `-- Sincronización generada desde ${basename(filePath)} — parte ${numero} de ${partes.length}.`,
+      `-- Ejecuta las partes EN ORDEN (1, 2, 3...), cada una es una sola sentencia SQL.`,
+      `DO $SYNC_${numero}$`,
+      "BEGIN",
+      "",
+      ...lineasParte,
+      "",
+      `END $SYNC_${numero}$;`,
+      "",
+    ].join("\n");
 
-  console.log(out.join("\n"));
+    const nombreFichero = join(outDir, `${nombreBase}-sync-parte${numero}-de-${partes.length}.sql`);
+    writeFileSync(nombreFichero, contenido, "utf-8");
+    console.error(`Escrito: ${nombreFichero} (${contenido.length} caracteres)`);
+  });
+
   console.error(
     `\n-- Leído del Excel: ${pagos.length} pagos, ${cobros.length} cobros, ${cobrosEspeciales.length} cobros especiales, ${productos.length} productos.`
   );
