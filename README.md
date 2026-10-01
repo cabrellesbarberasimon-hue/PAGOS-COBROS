@@ -1,6 +1,6 @@
-# CUBI · Tesorería, Pagos y Cobros
+# BOCUBI · Tesorería, Pagos y Cobros
 
-App interna de tesorería para CUBI Mobiliario de Diseño SL. Sustituye al
+App interna de tesorería para BOCUBI Mobiliario de Diseño SL. Sustituye al
 Excel `PAGOS-COBROS_PROYECCIONES_18-09.xlsx` como fuente de verdad: el
 Excel solo se usó para la carga histórica inicial.
 

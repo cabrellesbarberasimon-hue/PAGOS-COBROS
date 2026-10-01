@@ -41,7 +41,7 @@ function InformePdf({ informe }: { informe: InformePosicion }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Informe de posición — CUBI Mobiliario de Diseño SL</Text>
+        <Text style={styles.title}>Informe de posición — BOCUBI Mobiliario de Diseño SL</Text>
         <Text style={styles.subtitle}>Generado el {informe.fechaGeneracion.toLocaleString("es-ES")}</Text>
 
         <View style={styles.section}>

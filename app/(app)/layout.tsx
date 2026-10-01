@@ -22,9 +22,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white px-3 py-5 md:block">
         <div className="mb-6 flex items-center gap-2 px-2">
-          <img src="/logo.png" alt="CUBI" className="h-9 w-9 object-contain" />
+          <img src="/logo.png" alt="BOCUBI" className="h-9 w-9 object-contain" />
           <div>
-            <p className="text-sm font-semibold leading-tight text-slate-900">CUBI</p>
+            <p className="text-sm font-semibold leading-tight text-slate-900">BOCUBI</p>
             <p className="text-xs leading-tight text-slate-500">Tesorería</p>
           </div>
         </div>
@@ -45,8 +45,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex-1">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="CUBI" className="h-8 w-8 object-contain" />
-            <span className="text-sm font-semibold">CUBI Tesorería</span>
+            <img src="/logo.png" alt="BOCUBI" className="h-8 w-8 object-contain" />
+            <span className="text-sm font-semibold">BOCUBI Tesorería</span>
           </div>
           <form action="/api/logout" method="POST">
             <button type="submit" className="text-xs font-medium text-slate-400">

@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500">Posición de tesorería de CUBI Mobiliario de Diseño SL</p>
+        <p className="text-sm text-slate-500">Posición de tesorería de BOCUBI Mobiliario de Diseño SL</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">

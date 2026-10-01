@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CUBI · Tesorería",
-  description: "Gestión de pagos, cobros y proyección de tesorería de CUBI Mobiliario de Diseño SL",
+  title: "BOCUBI · Tesorería",
+  description: "Gestión de pagos, cobros y proyección de tesorería de BOCUBI Mobiliario de Diseño SL",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

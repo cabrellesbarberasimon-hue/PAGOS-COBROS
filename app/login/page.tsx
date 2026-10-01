@@ -7,8 +7,8 @@ export default function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <img src="/logo.png" alt="CUBI" className="mx-auto mb-3 h-12 w-12 object-contain" />
-          <h1 className="text-lg font-semibold text-slate-900">CUBI · Tesorería</h1>
+          <img src="/logo.png" alt="BOCUBI" className="mx-auto mb-3 h-12 w-12 object-contain" />
+          <h1 className="text-lg font-semibold text-slate-900">BOCUBI · Tesorería</h1>
           <p className="mt-1 text-sm text-slate-500">Pagos, cobros y proyección de tesorería</p>
         </div>
 

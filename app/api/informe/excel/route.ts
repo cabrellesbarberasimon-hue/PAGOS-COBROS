@@ -29,7 +29,7 @@ export async function GET() {
   const wb = XLSX.utils.book_new();
 
   const resumenRows = [
-    ["Informe de posición — CUBI Mobiliario de Diseño SL"],
+    ["Informe de posición — BOCUBI Mobiliario de Diseño SL"],
     [`Generado: ${informe.fechaGeneracion.toLocaleString("es-ES")}`],
     [],
     ["1. Embudo de conversión a caja"],
