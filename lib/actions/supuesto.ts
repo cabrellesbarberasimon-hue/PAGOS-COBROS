@@ -53,6 +53,8 @@ export async function updateInformeInputs(formData: FormData) {
     where: { id },
     data: {
       pedidosPendientesServir: num(formData.get("pedidosPendientesServir")),
+      albaranesGirosACobrar: num(formData.get("albaranesGirosACobrar")),
+      letrasEnCartera: num(formData.get("letrasEnCartera")),
       inversionesPendientes: num(formData.get("inversionesPendientes")),
       colchonSeguridadMeses: num(formData.get("colchonSeguridadMeses")),
     },

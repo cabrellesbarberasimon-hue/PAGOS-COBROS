@@ -85,7 +85,10 @@ export default async function InformePage() {
               </td>
             </tr>
             <tr>
-              <td>Facturas pendientes de cobro</td>
+              <td>
+                Facturas pendientes de cobro
+                <span className="ml-1 text-xs text-slate-400">(calculado desde Cobros, no editable aquí)</span>
+              </td>
               <td className="text-right tabular-nums">{formatCurrency(e.facturasPendientesCobro)}</td>
               <td className="text-right tabular-nums">
                 {formatPct(e.totalFlujoPotencial > 0 ? e.facturasPendientesCobro / e.totalFlujoPotencial : null)}
@@ -239,8 +242,9 @@ export default async function InformePage() {
         <div className="card">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Insumos manuales del informe</h2>
           <p className="mb-3 text-xs text-slate-400">
-            Estos 3 datos no se pueden calcular a partir de Pagos/Cobros (son a nivel de pedido/proyecto): actualízalos
-            cuando cambien.
+            Las 4 primeras etapas del embudo son editables aquí (los mismos valores se usan en Proyección). Solo
+            "Facturas pendientes de cobro" no se edita a mano: se calcula sola sumando la tabla de Cobros — para
+            cambiarla, da de alta/edita/borra cobros en esa pantalla.
           </p>
           <form action={updateInformeInputs} className="space-y-3">
             <input type="hidden" name="id" value={supuesto.id} />
@@ -251,6 +255,18 @@ export default async function InformePage() {
                 defaultValue={supuesto.pedidosPendientesServir.toString()}
                 className="input w-full"
               />
+            </div>
+            <div>
+              <label className="label">Albaranes pendientes de facturar (€)</label>
+              <input
+                name="albaranesGirosACobrar"
+                defaultValue={supuesto.albaranesGirosACobrar.toString()}
+                className="input w-full"
+              />
+            </div>
+            <div>
+              <label className="label">Efectos pendientes de remesar (€)</label>
+              <input name="letrasEnCartera" defaultValue={supuesto.letrasEnCartera.toString()} className="input w-full" />
             </div>
             <div>
               <label className="label">Inversiones pendientes (€)</label>
