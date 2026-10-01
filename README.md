@@ -73,6 +73,17 @@ modelo. Diferencias respecto a un primer boceto, y por qué:
   fórmulas rotas `#REF!`): reutiliza directamente los primeros 12 meses del
   motor de Proyección ya existente. Se puede exportar a Excel y a PDF desde
   la propia pantalla.
+- **Centro de alertas (campana en el layout)**: combina las alertas de
+  ratios del Informe de posición con alertas de saldo bajo por cuenta
+  bancaria y sugerencias de traspaso entre bancos (`lib/alertas.ts`). El
+  saldo de cada cuenta/póliza (`ProductoFinanciero.disponible`) no viene de
+  ninguna integración bancaria: se registra a mano cada día desde
+  **Bancos** (campo "saldo hoy" junto a cada cuenta), y queda también en
+  `SaldoHistorico` para poder ver su evolución más adelante. Si una cuenta
+  tiene un `umbralSaldoMinimo` configurado (editable en "Editar producto")
+  y su disponible cae por debajo, se genera una alerta; si a la vez otra
+  cuenta tiene superávit sobre su propio umbral, se sugiere el traspaso
+  concreto a realizar.
 
 ## Desarrollo local
 

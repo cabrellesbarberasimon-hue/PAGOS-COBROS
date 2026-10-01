@@ -30,6 +30,7 @@ export function ProductoForm({
     pendienteManual?: unknown;
     dispuesto?: unknown;
     disponible?: unknown;
+    umbralSaldoMinimo?: unknown;
     tipoInteresTexto?: string | null;
     tipoInteresAnualPct?: unknown;
     cuotaMensual?: unknown;
@@ -93,6 +94,11 @@ export function ProductoForm({
         <div>
           <label className="label">Disponible (€)</label>
           <input name="disponible" defaultValue={d.disponible as string} className="input w-full" />
+        </div>
+        <div>
+          <label className="label">Umbral de alerta de saldo bajo (€)</label>
+          <input name="umbralSaldoMinimo" defaultValue={d.umbralSaldoMinimo as string} className="input w-full" placeholder="opcional" />
+          <p className="mt-1 text-xs text-slate-400">Si el disponible cae por debajo, se genera una alerta.</p>
         </div>
       </div>
 

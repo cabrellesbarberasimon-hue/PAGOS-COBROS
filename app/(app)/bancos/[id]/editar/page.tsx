@@ -27,6 +27,7 @@ export default async function EditarProductoPage({ params }: { params: { id: str
           pendienteManual: producto.pendienteManual?.toString(),
           dispuesto: producto.dispuesto?.toString(),
           disponible: producto.disponible?.toString(),
+          umbralSaldoMinimo: producto.umbralSaldoMinimo?.toString(),
           tipoInteresTexto: producto.tipoInteresTexto,
           tipoInteresAnualPct: producto.tipoInteresAnual ? (Number(producto.tipoInteresAnual) * 100).toString() : "",
           cuotaMensual: producto.cuotaMensual?.toString(),

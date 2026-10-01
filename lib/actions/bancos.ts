@@ -44,6 +44,7 @@ async function buildData(formData: FormData) {
     pendienteManual: num(formData.get("pendienteManual")),
     dispuesto: num(formData.get("dispuesto")),
     disponible: num(formData.get("disponible")),
+    umbralSaldoMinimo: num(formData.get("umbralSaldoMinimo")),
     tipoInteresTexto: String(formData.get("tipoInteresTexto") ?? "").trim() || null,
     tipoInteresAnual: pct(formData.get("tipoInteresAnualPct")),
     cuotaMensual: num(formData.get("cuotaMensual")),
@@ -67,6 +68,36 @@ export async function updateProducto(id: string, formData: FormData) {
   revalidatePath("/bancos");
   revalidatePath("/");
   redirect("/bancos");
+}
+
+function fechaSoloDia(v: FormDataEntryValue | null): Date {
+  const d = dateOrNull(v) ?? new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Registra el saldo de hoy (o de la fecha indicada) de una cuenta/póliza:
+// guarda el snapshot en el histórico y actualiza el "disponible" vigente del
+// producto, que es el campo que ya usan el dashboard, el informe y la
+// proyección como saldo bancario actual.
+export async function registrarSaldoDiario(formData: FormData) {
+  const productoId = String(formData.get("productoId") ?? "");
+  const saldo = num(formData.get("saldo"));
+  if (!productoId || saldo === null) throw new Error("Falta la cuenta o el saldo.");
+  const fecha = fechaSoloDia(formData.get("fecha"));
+
+  await prisma.$transaction([
+    prisma.saldoHistorico.upsert({
+      where: { productoId_fecha: { productoId, fecha } },
+      update: { saldo },
+      create: { productoId, fecha, saldo },
+    }),
+    prisma.productoFinanciero.update({ where: { id: productoId }, data: { disponible: saldo } }),
+  ]);
+
+  revalidatePath("/bancos");
+  revalidatePath("/");
+  revalidatePath("/informe");
 }
 
 export async function deleteProducto(formData: FormData) {

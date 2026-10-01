@@ -1,5 +1,7 @@
 import { NavLink } from "@/components/NavLink";
+import { CentroAlertasBoton } from "@/components/CentroAlertas";
 import { getSessionRole } from "@/lib/auth";
+import { obtenerCentroAlertas } from "@/lib/alertas";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: "📊" },
@@ -17,6 +19,7 @@ const NAV = [
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const role = await getSessionRole();
   const nav = NAV.filter((item) => !item.soloSimon || role === "simon");
+  const alertas = await obtenerCentroAlertas();
 
   return (
     <div className="flex min-h-screen">
@@ -43,16 +46,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex-1">
+        <header className="hidden items-center justify-end border-b border-slate-200 bg-white px-4 py-2 md:flex">
+          <CentroAlertasBoton alertas={alertas} />
+        </header>
+
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="BOCUBI" className="h-8 w-8 object-contain" />
             <span className="text-sm font-semibold">BOCUBI Tesorería</span>
           </div>
-          <form action="/api/logout" method="POST">
-            <button type="submit" className="text-xs font-medium text-slate-400">
-              Salir
-            </button>
-          </form>
+          <div className="flex items-center gap-1">
+            <CentroAlertasBoton alertas={alertas} />
+            <form action="/api/logout" method="POST">
+              <button type="submit" className="text-xs font-medium text-slate-400">
+                Salir
+              </button>
+            </form>
+          </div>
         </header>
 
         <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-2 py-2 md:hidden">

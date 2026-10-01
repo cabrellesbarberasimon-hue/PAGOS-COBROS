@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { pendienteActual } from "@/lib/tesoreria";
-import { deleteProducto } from "@/lib/actions/bancos";
+import { deleteProducto, registrarSaldoDiario } from "@/lib/actions/bancos";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,12 @@ const TIPO_LABELS: Record<string, string> = {
   LINEA_DESCUENTO: "Línea de descuento",
   CUENTA: "Cuenta",
 };
+
+const TIPOS_CON_SALDO = new Set(["CUENTA", "POLIZA_CREDITO", "LINEA_DESCUENTO"]);
+
+function hoyInput(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default async function BancosPage() {
   const entidades = await prisma.entidadFinanciera.findMany({
@@ -73,14 +79,40 @@ export default async function BancosPage() {
               </tr>
             </thead>
             <tbody>
-              {entidad.productos.map((p) => (
+              {entidad.productos.map((p) => {
+                const tieneSaldo = TIPOS_CON_SALDO.has(p.tipo);
+                const saldoBajo =
+                  tieneSaldo && p.umbralSaldoMinimo !== null && Number(p.disponible ?? 0) < Number(p.umbralSaldoMinimo);
+                return (
                 <tr key={p.id}>
                   <td className="max-w-[14rem] truncate">{p.nombre}</td>
                   <td className="whitespace-nowrap text-xs text-slate-500">{TIPO_LABELS[p.tipo]}</td>
                   <td className="text-right tabular-nums">
                     {p.tipo === "PRESTAMO" || p.tipo === "LEASING" ? formatCurrency(pendienteActual(p)) : "—"}
                   </td>
-                  <td className="text-right tabular-nums">{p.disponible ? formatCurrency(p.disponible) : "—"}</td>
+                  <td className="text-right tabular-nums">
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={saldoBajo ? "font-semibold text-semaforo-rojo" : ""}>
+                        {p.disponible ? formatCurrency(p.disponible) : "—"}
+                        {saldoBajo ? " ⚠️" : ""}
+                      </span>
+                      {tieneSaldo && (
+                        <form action={registrarSaldoDiario} className="flex items-center gap-1">
+                          <input type="hidden" name="productoId" value={p.id} />
+                          <input type="hidden" name="fecha" value={hoyInput()} />
+                          <input
+                            name="saldo"
+                            placeholder="saldo hoy"
+                            defaultValue=""
+                            className="input h-7 w-24 px-1 text-right text-xs"
+                          />
+                          <button type="submit" className="text-xs text-brand-600 hover:underline">
+                            Guardar
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </td>
                   <td className="whitespace-nowrap text-xs text-slate-500">{p.tipoInteresTexto ?? "—"}</td>
                   <td className="text-right tabular-nums">{p.cuotaMensual ? formatCurrency(p.cuotaMensual) : "—"}</td>
                   <td className="whitespace-nowrap">{formatDate(p.fechaVencimiento)}</td>
@@ -101,7 +133,8 @@ export default async function BancosPage() {
                     </form>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {entidad.productos.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-4 text-center text-sm text-slate-400">
