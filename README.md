@@ -84,6 +84,18 @@ modelo. Diferencias respecto a un primer boceto, y por qué:
   y su disponible cae por debajo, se genera una alerta; si a la vez otra
   cuenta tiene superávit sobre su propio umbral, se sugiere el traspaso
   concreto a realizar.
+- **Resumen diario por email** (`/api/cron/resumen`, cron en `vercel.json`):
+  reutiliza el mismo `lib/alertas.ts` para mandar el mismo contenido del
+  centro de alertas por correo una vez al día. Es opcional y no rompe nada
+  si no se configura (ver variables de entorno opcionales más abajo).
+- **Asistente IA** (`/asistente`): un chat que responde preguntas sobre la
+  tesorería llamando a los mismos motores de cálculo que ya usa el resto de
+  la app (`lib/ai-tools.ts` expone KPIs del dashboard, el Informe de
+  posición, el centro de alertas, pagos pendientes, cobros vencidos y la
+  proyección mensual como "herramientas" que el modelo debe invocar para
+  cualquier cifra) — así nunca inventa números. Es opcional (requiere
+  `ANTHROPIC_API_KEY`); sin esa variable, la pantalla explica cómo
+  activarlo en vez de fallar.
 
 ## Desarrollo local
 
@@ -192,6 +204,27 @@ detección de duplicados antes de confirmar.
 |---|---|
 | `DATABASE_URL` | Cadena de conexión Postgres (la da Vercel Postgres/Neon) |
 | `APP_PASSWORD` | Contraseña única de acceso a la app |
+
+### Variables de entorno opcionales (resumen por email y asistente IA)
+
+Estas tres funcionalidades están pensadas para fallar de forma silenciosa si
+no se configuran: la app sigue funcionando igual, simplemente esa pieza
+concreta queda inactiva hasta que se añaden sus variables.
+
+| Variable | Para qué sirve | Dónde se consigue |
+|---|---|---|
+| `RESEND_API_KEY` | Envía el resumen diario de alertas por email | Cuenta gratuita en [resend.com](https://resend.com) |
+| `ALERTAS_EMAIL_FROM` | Remitente del email, p.ej. `Tesorería BOCUBI <alertas@tudominio.com>` | Un dominio verificado en Resend, o su dominio de pruebas |
+| `ALERTAS_EMAIL_TO` | Destinatario(s), separados por coma | — |
+| `CRON_SECRET` | Protege `/api/cron/resumen` para que solo lo invoque el cron de Vercel | Cualquier cadena aleatoria larga |
+| `ANTHROPIC_API_KEY` | Activa el Asistente IA (`/asistente`) | Cuenta en [console.anthropic.com](https://console.anthropic.com) |
+
+El cron que manda el resumen diario (`/api/cron/resumen`, programado en
+`vercel.json` a las 7:00 UTC) está activo en cuanto se despliega la app, sin
+configuración adicional en Vercel — Vercel detecta `vercel.json` solo. Si
+`RESEND_API_KEY`/`ALERTAS_EMAIL_FROM`/`ALERTAS_EMAIL_TO` no están puestas,
+simplemente no manda nada (se puede comprobar su respuesta JSON visitando la
+URL directamente, protegida por `CRON_SECRET` si está configurado).
 
 ### Notas de seguridad
 

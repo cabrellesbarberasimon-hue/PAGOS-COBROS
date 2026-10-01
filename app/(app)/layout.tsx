@@ -13,6 +13,7 @@ const NAV = [
   { href: "/amortizaciones", label: "Amortizaciones", icon: "📉" },
   { href: "/proyeccion", label: "Proyección", icon: "📈" },
   { href: "/informe", label: "Informe de posición", icon: "🧾" },
+  { href: "/asistente", label: "Asistente IA", icon: "🤖" },
   { href: "/importar", label: "Importar Excel", icon: "📥" },
 ];
 

@@ -17,6 +17,7 @@ export async function middleware(req: NextRequest) {
   if (
     PUBLIC_PATHS.some((p) => pathname === p) ||
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/cron/") ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();

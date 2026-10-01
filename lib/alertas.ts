@@ -1,4 +1,4 @@
-import type { EntidadFinanciera, ProductoFinanciero } from "@prisma/client";
+import type { Cobro, EntidadFinanciera, Pago, ProductoFinanciero, SupuestoTesoreria } from "@prisma/client";
 import { prisma } from "./prisma";
 import { calcularInforme, type AlertaInforme } from "./informe";
 import { toNumber } from "./format";
@@ -84,14 +84,12 @@ export function calcularAlertasSaldo(productos: ProductoConEntidad[]): {
   return { alertasSaldo, sugerenciasTraspaso };
 }
 
-export async function obtenerCentroAlertas(): Promise<CentroAlertas> {
-  const [supuesto, pagos, cobros, productos] = await Promise.all([
-    prisma.supuestoTesoreria.findFirst({ orderBy: { updatedAt: "desc" } }),
-    prisma.pago.findMany(),
-    prisma.cobro.findMany(),
-    prisma.productoFinanciero.findMany({ include: { entidad: true } }),
-  ]);
-
+export function calcularCentroAlertas(
+  supuesto: SupuestoTesoreria | null,
+  pagos: Pago[],
+  cobros: Cobro[],
+  productos: ProductoConEntidad[]
+): CentroAlertas {
   const alertasInforme = supuesto
     ? calcularInforme(supuesto, pagos, cobros, productos).alertas.filter((a) => a.ok === false)
     : [];
@@ -104,4 +102,15 @@ export async function obtenerCentroAlertas(): Promise<CentroAlertas> {
     sugerenciasTraspaso,
     total: alertasInforme.length + alertasSaldo.length,
   };
+}
+
+export async function obtenerCentroAlertas(): Promise<CentroAlertas> {
+  const [supuesto, pagos, cobros, productos] = await Promise.all([
+    prisma.supuestoTesoreria.findFirst({ orderBy: { updatedAt: "desc" } }),
+    prisma.pago.findMany(),
+    prisma.cobro.findMany(),
+    prisma.productoFinanciero.findMany({ include: { entidad: true } }),
+  ]);
+
+  return calcularCentroAlertas(supuesto, pagos, cobros, productos);
 }
