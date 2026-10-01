@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
-// Rutas accesibles sin sesión.
-const PUBLIC_PATHS = ["/login", "/api/login"];
+// Rutas accesibles sin sesión. Incluye el logo/icono de la app porque el
+// navegador los pide sin cookies (favicon, previsualización del login, etc.)
+// y no son sensibles.
+const PUBLIC_PATHS = ["/login", "/api/login", "/icon.png", "/logo.png"];
 
 // Secciones restringidas a la sesión "Simón" (misma contraseña que el resto,
 // pero marcada aparte en el login). Se bloquean aquí en vez de solo ocultar
