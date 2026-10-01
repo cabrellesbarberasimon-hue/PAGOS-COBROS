@@ -108,3 +108,16 @@ export async function posponerUnaSemana(formData: FormData) {
   await prisma.pago.update({ where: { id }, data: { remesaSemana: actual } });
   revalidatePath("/pagos/remesas");
 }
+
+// Asignación múltiple desde la pantalla de Pagos: selecciona varias
+// transferencias con la casilla de la tabla y asígnalas a una remesa de una
+// sola vez, sin tener que ir una a una a la pantalla de Remesas.
+export async function asignarRemesaMultiple(ids: string[], semanaISO: string | null) {
+  if (ids.length === 0) return;
+  await prisma.pago.updateMany({
+    where: { id: { in: ids } },
+    data: { remesaSemana: semanaISO ? new Date(semanaISO) : null },
+  });
+  revalidatePath("/pagos");
+  revalidatePath("/pagos/remesas");
+}
